@@ -228,3 +228,74 @@ def identify_cmd(ctx, input_path, library_root, as_json) -> None:
             else:
                 bb = r["bbox"]
                 click.echo(f"{r['file']} bbox={bb} → {r['name']} (score={r['score']:.3f})")
+
+
+@main.command("list")
+@click.option("--library-root", type=click.Path(path_type=Path), default=None)
+@click.option("--json", "as_json", is_flag=True)
+@click.pass_context
+def list_cmd(ctx, library_root, as_json) -> None:
+    """List enrolled pets."""
+    params = ctx.obj["params"]
+    root = Path(library_root) if library_root else Path(params["pet_id"]["library_root"])
+    library = Library(root)
+    entries = library.list()
+    payload = [
+        {"pet_id": e.pet_id, "name": e.name, "species": e.species,
+         "view_count": e.view_count, "created_at": e.created_at}
+        for e in entries
+    ]
+    if as_json:
+        click.echo(json.dumps(payload, indent=2))
+    else:
+        for e in entries:
+            click.echo(f"{e.pet_id}  {e.name:<16}  {e.species:<6}  "
+                       f"views={e.view_count}  {e.created_at}")
+
+
+@main.command("show")
+@click.argument("pet_id")
+@click.option("--library-root", type=click.Path(path_type=Path), default=None)
+@click.option("--json", "as_json", is_flag=True)
+@click.pass_context
+def show_cmd(ctx, pet_id, library_root, as_json) -> None:
+    """Show a PetCard's full JSON."""
+    from pet_id_registry.library import PetNotFoundError
+
+    params = ctx.obj["params"]
+    root = Path(library_root) if library_root else Path(params["pet_id"]["library_root"])
+    library = Library(root)
+    try:
+        card = library.load(pet_id)
+    except PetNotFoundError:
+        raise click.ClickException(f"pet_id not found: {pet_id}")
+    if as_json:
+        click.echo(card.model_dump_json(indent=2))
+    else:
+        click.echo(f"pet_id:     {card.pet_id}")
+        click.echo(f"name:       {card.name}")
+        click.echo(f"species:    {card.species.value}")
+        click.echo(f"views:      {len(card.views)}")
+        click.echo(f"created_at: {card.created_at.isoformat()}")
+
+
+@main.command("delete")
+@click.argument("pet_id")
+@click.option("--library-root", type=click.Path(path_type=Path), default=None)
+@click.option("--yes", is_flag=True, help="skip confirmation")
+@click.pass_context
+def delete_cmd(ctx, pet_id, library_root, yes) -> None:
+    """Delete an enrolled pet."""
+    from pet_id_registry.library import PetNotFoundError
+
+    params = ctx.obj["params"]
+    root = Path(library_root) if library_root else Path(params["pet_id"]["library_root"])
+    library = Library(root)
+    if not yes and not click.confirm(f"delete pet_id {pet_id}?"):
+        click.echo("aborted")
+        return
+    try:
+        library.delete(pet_id)
+    except PetNotFoundError:
+        raise click.ClickException(f"pet_id not found: {pet_id}")
+    click.echo(f"deleted {pet_id}")
