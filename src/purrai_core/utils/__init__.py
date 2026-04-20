@@ -1,0 +1,1 @@
+"""Purrai-core subpackage."""

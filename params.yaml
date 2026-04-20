@@ -1,0 +1,68 @@
+# pet-demo core 推理参数
+# 所有数值/路径/ID 映射必须走此文件，禁止模块内硬编码
+
+version: "0.1.0"
+
+# ---- YOLOv10 Detector ----
+detector:
+  model_name: "yolov10n"          # n/s/m/l/x
+  weights_url: null                # null 时用 ultralytics 默认下载
+  conf_threshold: 0.35
+  iou_threshold: 0.5
+  class_whitelist: [15, 16]        # COCO 15=cat, 16=dog
+  device: "cuda"                   # 测试通过 monkeypatch 切 cpu
+  imgsz: 640
+
+# ---- ByteTrack Tracker ----
+tracker:
+  track_thresh: 0.5
+  high_thresh: 0.6
+  match_thresh: 0.8
+  track_buffer: 30
+  frame_rate: 30
+
+# ---- OSNet Re-ID ----
+reid:
+  model_name: "osnet_x0_25"
+  embedding_dim: 512
+  similarity_threshold: 0.65
+  device: "cuda"
+
+# ---- MMPose ----
+pose:
+  config: "configs/animal_2d_keypoint/topdown_heatmap/ap10k/td-hm_hrnet-w32_8xb64-210e_ap10k-256x256.py"
+  checkpoint_url: "https://download.openmmlab.com/mmpose/animal/hrnet/hrnet_w32_ap10k_256x256-18aac840_20211029.pth"
+  keypoint_threshold: 0.3
+  device: "cuda"
+
+# ---- Qwen2-VL Narrative ----
+narrative:
+  model_id: "Qwen/Qwen2-VL-2B-Instruct"
+  device: "cuda"
+  dtype: "bfloat16"
+  max_new_tokens: 128
+  temperature: 0.7
+  system_prompt: |
+    你是一个懂宠物行为的观察者。看图后用中文一句话描述宠物当下状态，不超过 30 字。
+
+# ---- Pipeline ----
+pipeline:
+  vlm_trigger_interval_frames: 60
+  vlm_trigger_on_detection_change: true
+  parallel_reid_pose: true
+
+# ---- Render-time id stitch (M5) ----
+stitch:
+  cosine_threshold: 0.7     # OSNet 常用 0.65-0.75; 保守默认
+  max_gap_frames: 90        # 3s @ 30fps
+  embedding_window: 5       # 死亡/新生端各取 K 帧均值
+
+# ---- Logging ----
+logging:
+  level: "INFO"
+  format: "json"
+
+# ---- Retry (tenacity) ----
+retry:
+  max_attempts: 3
+  wait_seconds: 1.5

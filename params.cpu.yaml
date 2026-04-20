@@ -1,0 +1,56 @@
+# pet-demo core inference params — CPU override for non-CUDA hosts
+# Used by operators on Apple Silicon / CPU-only boxes via:
+#   python -m offline_bake.bake_m4 ... --params core/params.cpu.yaml
+# Mirror of params.yaml with `device: cpu` and float32 Qwen2-VL.
+
+version: "0.1.0"
+
+detector:
+  model_name: "yolov10n"
+  weights_url: null
+  conf_threshold: 0.35
+  iou_threshold: 0.5
+  class_whitelist: [15, 16]
+  device: "cpu"
+  imgsz: 640
+
+tracker:
+  track_thresh: 0.5
+  high_thresh: 0.6
+  match_thresh: 0.8
+  track_buffer: 30
+  frame_rate: 30
+
+reid:
+  model_name: "osnet_x0_25"
+  embedding_dim: 512
+  similarity_threshold: 0.65
+  device: "cpu"
+
+pose:
+  config: "configs/animal_2d_keypoint/topdown_heatmap/ap10k/td-hm_hrnet-w32_8xb64-210e_ap10k-256x256.py"
+  checkpoint_url: "https://download.openmmlab.com/mmpose/animal/hrnet/hrnet_w32_ap10k_256x256-18aac840_20211029.pth"
+  keypoint_threshold: 0.3
+  device: "cpu"
+
+narrative:
+  model_id: "Qwen/Qwen2-VL-2B-Instruct"
+  device: "cpu"
+  dtype: "float32"
+  max_new_tokens: 128
+  temperature: 0.7
+  system_prompt: |
+    你是一个懂宠物行为的观察者。看图后用中文一句话描述宠物当下状态，不超过 30 字。
+
+pipeline:
+  vlm_trigger_interval_frames: 60
+  vlm_trigger_on_detection_change: true
+  parallel_reid_pose: true
+
+logging:
+  level: "INFO"
+  format: "json"
+
+retry:
+  max_attempts: 3
+  wait_seconds: 1.5
