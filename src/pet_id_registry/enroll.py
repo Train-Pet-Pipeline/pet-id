@@ -1,7 +1,7 @@
 """Enrollment pipeline: detect → crop → embed → build PetCard → save."""
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from datetime import datetime
 from pathlib import Path
 
@@ -94,6 +94,74 @@ def enroll_photos(
         pet_id=pet_id, name=name, species=species,
         created_at=created_at, schema_version=_SCHEMA_VERSION,
         cover_photo_uri=cover_uri, views=views,
+        **(metadata or {}),
+    )
+    cover_crop = cv2.imread(str(cover_photo)) if cover_photo else None
+    assets = list(zip(views, crops, embeddings, strict=True))
+    library.save(card, view_assets=assets, cover_crop=cover_crop, force=force)
+    return card
+
+
+def _sample_video_frames(video_path: Path, fps_sample: float) -> Iterable[np.ndarray]:
+    cap = cv2.VideoCapture(str(video_path))
+    if not cap.isOpened():
+        raise RuntimeError(f"could not open video: {video_path}")
+    try:
+        src_fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+        stride = max(1, int(round(src_fps / float(fps_sample))))
+        idx = 0
+        while True:
+            ok, frame = cap.read()
+            if not ok:
+                break
+            if idx % stride == 0:
+                yield frame
+            idx += 1
+    finally:
+        cap.release()
+
+
+def enroll_video(
+    *,
+    video_path: Path,
+    name: str,
+    species: PetSpecies,
+    detector: Detector,
+    embedder: Embedder,
+    library: Library,
+    fps_sample: float,
+    max_views: int,
+    created_at: datetime,
+    cover_photo: Path | None = None,
+    force: bool = False,
+    metadata: dict | None = None,
+) -> PetCard:
+    """Build a PetCard from a video by FPS-sampling + largest-bbox crop + embed."""
+    crops: list[np.ndarray] = []
+    for frame in _sample_video_frames(video_path, fps_sample):
+        if len(crops) >= max_views:
+            break
+        crop = largest_bbox_crop(frame, detector)
+        if crop is None:
+            continue
+        crops.append(crop)
+    if not crops:
+        raise NoDetectionsError(f"no pet detected in video: {video_path}")
+    embeddings = [embedder.embed_crop(c) for c in crops]
+    pet_id = compute_pet_id(embeddings[0])
+
+    views = []
+    for i in range(len(crops)):
+        vid = f"{i + 1:04d}"
+        views.append(RegisteredView(
+            view_id=vid,
+            crop_uri=f"views/{vid}.jpg",
+            embedding_uri=f"views/{vid}.npy",
+        ))
+    card = PetCard(
+        pet_id=pet_id, name=name, species=species,
+        created_at=created_at, schema_version=_SCHEMA_VERSION,
+        cover_photo_uri=f"{pet_id}/cover.jpg", views=views,
         **(metadata or {}),
     )
     cover_crop = cv2.imread(str(cover_photo)) if cover_photo else None
