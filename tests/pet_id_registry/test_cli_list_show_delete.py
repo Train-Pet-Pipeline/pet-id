@@ -8,8 +8,8 @@ import numpy as np
 import yaml
 from click.testing import CliRunner
 
-from purrai_core.types import BBox, Detection
 from pet_id_registry.cli import main
+from purrai_core.types import BBox, Detection
 
 
 def _setup(tmp_path: Path, monkeypatch) -> tuple[Path, Path, dict]:
@@ -37,7 +37,8 @@ def _setup(tmp_path: Path, monkeypatch) -> tuple[Path, Path, dict]:
             self._axis = axis
 
         def embed_crop(self, _c):
-            v = np.zeros(8, dtype=np.float32); v[self._axis] = 1.0
+            v = np.zeros(8, dtype=np.float32)
+            v[self._axis] = 1.0
             return v
 
     monkeypatch.setattr("pet_id_registry.cli.build_detector", lambda cfg: D())

@@ -6,10 +6,10 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from purrai_core.types import BBox, Detection
 from pet_id_registry.card import PetSpecies
 from pet_id_registry.enroll import enroll_video
 from pet_id_registry.library import Library
+from purrai_core.types import BBox, Detection
 
 
 def _write_video(path: Path, *, frames: int, fps: int = 30,

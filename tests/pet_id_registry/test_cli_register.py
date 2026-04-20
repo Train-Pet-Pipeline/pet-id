@@ -7,8 +7,8 @@ import numpy as np
 import yaml
 from click.testing import CliRunner
 
-from purrai_core.types import BBox, Detection
 from pet_id_registry.cli import main
+from purrai_core.types import BBox, Detection
 
 
 def _write_img(p: Path, color: int = 128) -> Path:

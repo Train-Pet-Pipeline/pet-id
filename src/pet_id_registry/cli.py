@@ -19,20 +19,21 @@ _VIDEO_EXTS = {".mp4", ".mov", ".mkv"}
 
 def _load_params(path: Path) -> dict[str, Any]:
     """Load params.yaml from disk."""
-    return yaml.safe_load(path.read_text())
+    data: dict[str, Any] = yaml.safe_load(path.read_text())
+    return data
 
 
-def build_detector(cfg: dict[str, Any]):
+def build_detector(cfg: dict[str, Any]) -> Any:
     """Build the pet detector from params.detector."""
     from purrai_core.backends.yolov10_detector import YOLOv10Detector
 
     return YOLOv10Detector(cfg)
 
 
-def build_embedder(cfg: dict[str, Any]):
+def build_embedder(cfg: dict[str, Any]) -> Any:
     """Build the reid embedder adapter from params.reid."""
-    from purrai_core.backends.osnet_reid import OSNetReid
     from pet_id_registry.backends.osnet_embedder import OSNetEmbedderAdapter
+    from purrai_core.backends.osnet_reid import OSNetReid
 
     return OSNetEmbedderAdapter(OSNetReid(cfg))
 
@@ -86,7 +87,7 @@ def register_cmd(
     species: str,
     breed: str | None,
     sex: str | None,
-    birthdate,
+    birthdate: _dt.datetime | None,
     weight_kg: float | None,
     markings: str | None,
     owner_name: str | None,
@@ -157,11 +158,11 @@ def register_cmd(
         else:  # pragma: no cover
             raise click.UsageError(f"unsupported input: {input_path}")
     except NoDetectionsError as e:
-        raise click.ClickException(f"no pet detected: {e}")
+        raise click.ClickException(f"no pet detected: {e}") from e
     except PetAlreadyExistsError as e:
         raise click.ClickException(
             f"pet already exists (pet_id={e}); rerun with --force to overwrite"
-        )
+        ) from e
 
     click.echo(f"enrolled {card.name} [{card.pet_id}] with {len(card.views)} view(s)")
 
@@ -171,7 +172,12 @@ def register_cmd(
 @click.option("--library-root", type=click.Path(path_type=Path), default=None)
 @click.option("--json", "as_json", is_flag=True)
 @click.pass_context
-def identify_cmd(ctx, input_path, library_root, as_json) -> None:
+def identify_cmd(
+    ctx: click.Context,
+    input_path: Path,
+    library_root: Path | None,
+    as_json: bool,
+) -> None:
     """Identify pet(s) in a still image against the enrolled library."""
     params = ctx.obj["params"]
     pet_id_cfg = params["pet_id"]
@@ -184,16 +190,13 @@ def identify_cmd(ctx, input_path, library_root, as_json) -> None:
         raise click.ClickException(
             "identify takes a still image in first round; extract a frame and retry"
         )
-    if kind == "dir":
-        image_paths = _collect_images(input_path)
-    else:
-        image_paths = [input_path]
+    image_paths = _collect_images(input_path) if kind == "dir" else [input_path]
 
     detector = build_detector(params["detector"])
     embedder = build_embedder(params["reid"])
 
     import cv2
-    records = []
+    records: list[dict[str, Any]] = []
     for img_path in image_paths:
         frame = cv2.imread(str(img_path))
         if frame is None:
@@ -234,7 +237,7 @@ def identify_cmd(ctx, input_path, library_root, as_json) -> None:
 @click.option("--library-root", type=click.Path(path_type=Path), default=None)
 @click.option("--json", "as_json", is_flag=True)
 @click.pass_context
-def list_cmd(ctx, library_root, as_json) -> None:
+def list_cmd(ctx: click.Context, library_root: Path | None, as_json: bool) -> None:
     """List enrolled pets."""
     params = ctx.obj["params"]
     root = Path(library_root) if library_root else Path(params["pet_id"]["library_root"])
@@ -258,7 +261,12 @@ def list_cmd(ctx, library_root, as_json) -> None:
 @click.option("--library-root", type=click.Path(path_type=Path), default=None)
 @click.option("--json", "as_json", is_flag=True)
 @click.pass_context
-def show_cmd(ctx, pet_id, library_root, as_json) -> None:
+def show_cmd(
+    ctx: click.Context,
+    pet_id: str,
+    library_root: Path | None,
+    as_json: bool,
+) -> None:
     """Show a PetCard's full JSON."""
     from pet_id_registry.library import PetNotFoundError
 
@@ -267,8 +275,8 @@ def show_cmd(ctx, pet_id, library_root, as_json) -> None:
     library = Library(root)
     try:
         card = library.load(pet_id)
-    except PetNotFoundError:
-        raise click.ClickException(f"pet_id not found: {pet_id}")
+    except PetNotFoundError as e:
+        raise click.ClickException(f"pet_id not found: {pet_id}") from e
     if as_json:
         click.echo(card.model_dump_json(indent=2))
     else:
@@ -284,7 +292,12 @@ def show_cmd(ctx, pet_id, library_root, as_json) -> None:
 @click.option("--library-root", type=click.Path(path_type=Path), default=None)
 @click.option("--yes", is_flag=True, help="skip confirmation")
 @click.pass_context
-def delete_cmd(ctx, pet_id, library_root, yes) -> None:
+def delete_cmd(
+    ctx: click.Context,
+    pet_id: str,
+    library_root: Path | None,
+    yes: bool,
+) -> None:
     """Delete an enrolled pet."""
     from pet_id_registry.library import PetNotFoundError
 
@@ -296,6 +309,6 @@ def delete_cmd(ctx, pet_id, library_root, yes) -> None:
         return
     try:
         library.delete(pet_id)
-    except PetNotFoundError:
-        raise click.ClickException(f"pet_id not found: {pet_id}")
+    except PetNotFoundError as e:
+        raise click.ClickException(f"pet_id not found: {pet_id}") from e
     click.echo(f"deleted {pet_id}")

@@ -34,4 +34,5 @@ class OSNetEmbedderAdapter:
         with torch.no_grad():
             feats = self._reid.model(tensor)
         vec = torch.nn.functional.normalize(feats, dim=1).cpu().numpy()[0]
-        return vec.astype(np.float32, copy=False)
+        arr: np.ndarray = vec.astype(np.float32, copy=False)
+        return arr

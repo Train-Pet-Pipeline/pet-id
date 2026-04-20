@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from purrai_core.types import BBox, Detection
 from pet_id_registry.enroll import largest_bbox_crop
+from purrai_core.types import BBox, Detection
 
 
 class _FakeDetector:

@@ -3,20 +3,20 @@ from __future__ import annotations
 
 import hashlib
 from datetime import date, datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class PetSpecies(str, Enum):
+class PetSpecies(StrEnum):
     cat = "cat"
     dog = "dog"
     other = "other"
 
 
-class PetSex(str, Enum):
+class PetSex(StrEnum):
     male = "male"
     female = "female"
     unknown = "unknown"

@@ -7,10 +7,10 @@ import cv2
 import numpy as np
 import pytest
 
-from purrai_core.types import BBox, Detection
 from pet_id_registry.card import PetSpecies
 from pet_id_registry.enroll import NoDetectionsError, enroll_photos
 from pet_id_registry.library import Library
+from purrai_core.types import BBox, Detection
 
 
 class _FakeDetector:

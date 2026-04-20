@@ -8,12 +8,13 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from purrai_core.interfaces.detector import Detector
-from purrai_core.types import BBox
+from typing import Any
 
-from pet_id_registry.card import PetCard, PetSpecies, PetSex, RegisteredView, compute_pet_id
+from pet_id_registry.card import PetCard, PetSpecies, RegisteredView, compute_pet_id
 from pet_id_registry.library import Library
 from pet_id_registry.protocols import Embedder
+from purrai_core.interfaces.detector import Detector
+from purrai_core.types import BBox, Detection
 
 _SCHEMA_VERSION = "1.0.0"
 
@@ -39,8 +40,8 @@ def largest_bbox_crop(frame: np.ndarray, detector: Detector) -> np.ndarray | Non
     if not dets:
         return None
 
-    def area(d) -> float:
-        return d.bbox.width * d.bbox.height
+    def area(d: Detection) -> float:
+        return float(d.bbox.width * d.bbox.height)
 
     for d in sorted(dets, key=area, reverse=True):
         clipped = _clip_bbox(d.bbox, frame)
@@ -62,7 +63,7 @@ def enroll_photos(
     created_at: datetime,
     cover_photo: Path | None = None,
     force: bool = False,
-    metadata: dict | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> PetCard:
     """Build a PetCard from a list of still images and save it to `library`."""
     crops: list[np.ndarray] = []
@@ -134,7 +135,7 @@ def enroll_video(
     created_at: datetime,
     cover_photo: Path | None = None,
     force: bool = False,
-    metadata: dict | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> PetCard:
     """Build a PetCard from a video by FPS-sampling + largest-bbox crop + embed."""
     crops: list[np.ndarray] = []

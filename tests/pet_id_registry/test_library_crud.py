@@ -98,8 +98,6 @@ def test_atomic_save_no_partial_on_failure(tmp_path: Path, monkeypatch) -> None:
     crop, emb = _fake_view_payload()
 
     # Break writing *after* the temp dir is created but before rename.
-    orig_replace = __import__("os").replace
-
     def boom(src, dst):
         raise RuntimeError("simulated mid-write crash")
 

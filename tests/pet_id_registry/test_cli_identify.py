@@ -8,8 +8,8 @@ import numpy as np
 import yaml
 from click.testing import CliRunner
 
-from purrai_core.types import BBox, Detection
 from pet_id_registry.cli import main
+from purrai_core.types import BBox, Detection
 
 
 def _write_img(p: Path, color: int = 100) -> Path:
@@ -54,7 +54,8 @@ def test_identify_hits_enrolled_pet(tmp_path: Path, monkeypatch) -> None:
     runner = CliRunner()
 
     # enroll with vec_a
-    vec_a = np.zeros(8, dtype=np.float32); vec_a[0] = 1.0
+    vec_a = np.zeros(8, dtype=np.float32)
+    vec_a[0] = 1.0
     _stub(monkeypatch, vec_a)
     assert runner.invoke(main, [
         "--params", str(params), "register", str(img),
@@ -79,12 +80,14 @@ def test_identify_unknown_when_far(tmp_path: Path, monkeypatch) -> None:
     img = _write_img(tmp_path / "p.jpg")
     runner = CliRunner()
 
-    vec_a = np.zeros(8, dtype=np.float32); vec_a[0] = 1.0
+    vec_a = np.zeros(8, dtype=np.float32)
+    vec_a[0] = 1.0
     _stub(monkeypatch, vec_a)
     runner.invoke(main, ["--params", str(params), "register", str(img),
                          "--name", "A", "--species", "cat"])
 
-    vec_q = np.zeros(8, dtype=np.float32); vec_q[1] = 1.0  # orthogonal
+    vec_q = np.zeros(8, dtype=np.float32)
+    vec_q[1] = 1.0  # orthogonal
     _stub(monkeypatch, vec_q)
     result = runner.invoke(main, [
         "--params", str(params), "identify", str(img), "--json",
@@ -100,7 +103,8 @@ def test_identify_empty_library(tmp_path: Path, monkeypatch) -> None:
     params = _params(tmp_path, lib_root)
     img = _write_img(tmp_path / "p.jpg")
 
-    vec_q = np.zeros(8, dtype=np.float32); vec_q[0] = 1.0
+    vec_q = np.zeros(8, dtype=np.float32)
+    vec_q[0] = 1.0
     _stub(monkeypatch, vec_q)
     result = CliRunner().invoke(main, [
         "--params", str(params), "identify", str(img), "--json",
