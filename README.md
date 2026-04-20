@@ -21,3 +21,52 @@ Bootstrap — seeded from `pet-demo/core` (commit hash will be recorded in initi
 ## Required reading
 
 Parent monorepo guide: `../pet-infra/docs/DEVELOPMENT_GUIDE.md`
+
+## pet-id registry (v0.1.0)
+
+### Install
+
+```bash
+pip install -e ".[detector,reid]"
+```
+
+Entry point `petid` is registered automatically.
+
+### Enroll a pet
+
+```bash
+# one photo
+petid register photos/mimi_01.jpg --name Mimi --species cat
+
+# a folder of photos
+petid register photos/mimi/ --name Mimi --species cat --breed "Domestic Shorthair"
+
+# a short video
+petid register videos/mimi_circle.mp4 --name Mimi --species cat --weight-kg 4.2
+```
+
+**Capture tip:** a 5–10 second video walking a full circle around the pet, OR
+5+ photos from different angles (front / left / right / top / sitting).
+
+### Identify
+
+```bash
+petid identify query.jpg
+# → query.jpg bbox=[42, 30, 310, 240] → Mimi (score=0.812)
+petid identify query.jpg --json
+```
+
+### Browse
+
+```bash
+petid list
+petid show <pet_id>
+petid delete <pet_id> --yes
+```
+
+### Configuration
+
+All numerics (library root, FPS sampling, view cap, match threshold) live in
+`params.yaml` under the `pet_id:` block. See
+`docs/superpowers/specs/2026-04-21-pet-id-first-round-design.md` for the full
+design.
