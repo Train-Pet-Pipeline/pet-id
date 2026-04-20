@@ -191,17 +191,28 @@ def test_card_round_trip_json() -> None:
     assert c2.views[0].pose_hint is None
 
 
+def _unit(v: np.ndarray) -> np.ndarray:
+    return v / np.linalg.norm(v)
+
+
 def test_compute_pet_id_deterministic_across_dtypes() -> None:
-    v64 = np.arange(8, dtype=np.float64)
+    v64 = _unit(np.arange(1, 9, dtype=np.float64))
     v32 = v64.astype(np.float32)
     assert compute_pet_id(v64) == compute_pet_id(v32)
 
 
 def test_compute_pet_id_length_8_hex() -> None:
-    v = np.arange(8, dtype=np.float32)
+    v = _unit(np.arange(1, 9, dtype=np.float32))
     pid = compute_pet_id(v)
     assert len(pid) == 8
     int(pid, 16)  # must be valid hex
+
+
+def test_compute_pet_id_requires_normalized() -> None:
+    import pytest
+
+    with pytest.raises(ValueError, match="L2-normalized"):
+        compute_pet_id(np.array([3.0, 4.0], dtype=np.float32))  # norm=5
 ```
 
 - [ ] **Step 2: Run — verify RED**
@@ -272,9 +283,15 @@ class PetCard(BaseModel):
 def compute_pet_id(embedding: np.ndarray) -> str:
     """Return an 8-hex-char content-addressed id.
 
-    Embedding is normalized to little-endian float32 contiguous bytes before
-    hashing to ensure the id is identical across hosts and dtype choices.
+    Caller must pass an L2-normalized embedding (norm≈1). The bytes are
+    canonicalized to little-endian float32 contiguous before hashing so the
+    id is identical across hosts and dtype choices.
     """
+    norm = float(np.linalg.norm(embedding))
+    if not np.isclose(norm, 1.0, atol=1e-3):
+        raise ValueError(
+            f"compute_pet_id requires an L2-normalized embedding (got norm={norm:.4f})"
+        )
     arr = np.ascontiguousarray(embedding.astype("<f4"))
     return hashlib.sha256(arr.tobytes()).hexdigest()[:8]
 ```
