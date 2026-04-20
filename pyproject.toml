@@ -15,6 +15,7 @@ dependencies = [
     "python-json-logger>=2.0",
     "opencv-python-headless>=4.9",
     "pillow>=10.0",
+    "click>=8.1",
 ]
 
 [project.optional-dependencies]
@@ -32,9 +33,12 @@ dev = [
     "types-PyYAML",
 ]
 
+[project.scripts]
+petid = "pet_id_registry.cli:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["purrai_core", "purrai_core.*"]
+include = ["purrai_core", "purrai_core.*", "pet_id_registry", "pet_id_registry.*"]
 
 [tool.ruff]
 line-length = 100
