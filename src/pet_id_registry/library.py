@@ -35,6 +35,20 @@ class LibraryEntry:
     created_at: str
 
 
+@dataclass(frozen=True)
+class IdentifyResult:
+    pet_id: str
+    name: str
+    score: float
+    view_id: str
+
+
+def _iter_view_embeddings(root: Path, pet_id: str) -> Iterable[tuple[str, np.ndarray]]:
+    vdir = root / pet_id / "views"
+    for npy in sorted(vdir.glob("*.npy")):
+        yield npy.stem, np.load(npy)
+
+
 class Library:
     """Local filesystem PetCard gallery."""
 
@@ -112,6 +126,20 @@ class Library:
             raise PetNotFoundError(pet_id)
         shutil.rmtree(target)
         self._rebuild_index()
+
+    def identify(self, query: np.ndarray, *, threshold: float) -> IdentifyResult | None:
+        q = np.asarray(query, dtype=np.float32).reshape(-1)
+        best: IdentifyResult | None = None
+        for entry in self.list():
+            for view_id, vec in _iter_view_embeddings(self.root, entry.pet_id):
+                score = float(np.dot(q, vec) / (np.linalg.norm(q) * np.linalg.norm(vec) + 1e-9))
+                if best is None or score > best.score:
+                    best = IdentifyResult(
+                        pet_id=entry.pet_id, name=entry.name, score=score, view_id=view_id
+                    )
+        if best is None or best.score < threshold:
+            return None
+        return best
 
     def _rebuild_index(self) -> None:
         index = {e.pet_id: e.name for e in self.list()}
