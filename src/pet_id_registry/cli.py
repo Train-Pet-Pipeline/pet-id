@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime as _dt
+import json
 from pathlib import Path
 from typing import Any
 
@@ -163,3 +164,67 @@ def register_cmd(
         )
 
     click.echo(f"enrolled {card.name} [{card.pet_id}] with {len(card.views)} view(s)")
+
+
+@main.command("identify")
+@click.argument("input_path", type=click.Path(exists=True, path_type=Path))
+@click.option("--library-root", type=click.Path(path_type=Path), default=None)
+@click.option("--json", "as_json", is_flag=True)
+@click.pass_context
+def identify_cmd(ctx, input_path, library_root, as_json) -> None:
+    """Identify pet(s) in a still image against the enrolled library."""
+    params = ctx.obj["params"]
+    pet_id_cfg = params["pet_id"]
+    threshold = float(pet_id_cfg["similarity_threshold"])
+    root = Path(library_root) if library_root else Path(pet_id_cfg["library_root"])
+    library = Library(root)
+
+    kind = _classify_input(input_path)
+    if kind == "video":
+        raise click.ClickException(
+            "identify takes a still image in first round; extract a frame and retry"
+        )
+    if kind == "dir":
+        image_paths = _collect_images(input_path)
+    else:
+        image_paths = [input_path]
+
+    detector = build_detector(params["detector"])
+    embedder = build_embedder(params["reid"])
+
+    import cv2
+    records = []
+    for img_path in image_paths:
+        frame = cv2.imread(str(img_path))
+        if frame is None:
+            records.append({"file": str(img_path), "error": "cannot decode image"})
+            continue
+        dets = detector.detect(frame)
+        if not dets:
+            records.append({"file": str(img_path), "bbox": None, "name": "no detection",
+                            "pet_id": None, "score": 0.0})
+            continue
+        for d in dets:
+            x1, y1 = max(0, int(d.bbox.x1)), max(0, int(d.bbox.y1))
+            x2, y2 = min(frame.shape[1], int(d.bbox.x2)), min(frame.shape[0], int(d.bbox.y2))
+            if x2 <= x1 or y2 <= y1:
+                continue
+            q = embedder.embed_crop(frame[y1:y2, x1:x2].copy())
+            res = library.identify(q, threshold=threshold)
+            records.append({
+                "file": str(img_path),
+                "bbox": [x1, y1, x2, y2],
+                "pet_id": res.pet_id if res else None,
+                "name": res.name if res else "unknown",
+                "score": float(res.score) if res else 0.0,
+            })
+
+    if as_json:
+        click.echo(json.dumps(records, indent=2))
+    else:
+        for r in records:
+            if "error" in r:
+                click.echo(f"{r['file']}: {r['error']}")
+            else:
+                bb = r["bbox"]
+                click.echo(f"{r['file']} bbox={bb} → {r['name']} (score={r['score']:.3f})")
