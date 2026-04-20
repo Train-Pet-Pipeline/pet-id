@@ -76,7 +76,7 @@ petid delete <pet_id> [--library-root PATH] [--yes]
         └── …
 ```
 
-`<library_root>` defaults to `pet_id.library_root` from `params.yaml`; overridable per command with `--library-root`.
+`<library_root>` defaults to `pet_id.library_root` from `params.yaml`; overridable per command with `--library-root`. No other tunables (`fps_sample`, `max_views`, `similarity_threshold`, detector/reid config) expose CLI overrides in first round — edit `params.yaml` to change them.
 
 ### `PetCard` (Pydantic v2 model, local to pet-id)
 
@@ -90,7 +90,9 @@ petid delete <pet_id> [--library-root PATH] [--yes]
 
 ### `pet_id` assignment
 
-`pet_id = sha256(first_view_embedding.tobytes())[:8]`. Content-addressed; pet_id never collides in practice (family-scale library). `--force` on `register` overwrites an existing pet_id.
+`pet_id = sha256(first_view_embedding.tobytes())[:8]`, computed after the embedding is cast to `np.float32`, forced to little-endian (`.astype("<f4")`), and made contiguous (`.tobytes(order="C")`). This keeps ids portable across hosts and across future dtype changes. Content-addressed; pet_id never collides in practice (family-scale library). `--force` on `register` overwrites an existing pet_id.
+
+`schema_version` starts at `"1.0.0"` for the first-round release. Any change to `PetCard` / `RegisteredView` shape bumps semantically.
 
 ## 5. Algorithms
 
@@ -106,7 +108,13 @@ Atomic-enough: write into a temp subdirectory under `<library_root>/.tmp/` and `
 
 ### Identify
 
-Load the query input (image file; video is treated as a single-frame — first round does not scan video for identify, users run `identify` on a still). Run yolov10 → one result per bbox. For each bbox: crop → resize → OSNet embed.
+Load the query input. Accepted shapes:
+
+- **Single image file** → processed as one frame.
+- **Video file** → first round rejects with a clear error ("`identify` takes a still image in first round; extract a frame and retry"). Video scanning is a future-round addition.
+- **Directory** → every image file inside is processed in filename-sorted order; one output record per file × bbox. Video files in the directory are ignored with a warning.
+
+Run yolov10 on each frame → one result per bbox. For each bbox: crop → resize → OSNet embed.
 
 For each detected bbox, compute:
 
@@ -161,6 +169,19 @@ No bare `except:` or `except Exception: pass`. Retries for model loading reuse `
 
 Each file aims to stay under ~150 lines. Detector / embedder dependencies are taken via constructor injection using structural typing (`typing.Protocol`) so tests can substitute fakes without monkeypatching imports.
 
+Two protocols are introduced (both in `enroll.py` or a dedicated `protocols.py`):
+
+```python
+class Detector(Protocol):
+    def detect(self, frame: np.ndarray) -> list[Bbox]: ...
+
+class Embedder(Protocol):
+    embedding_dim: int
+    def embed_crop(self, crop: np.ndarray) -> np.ndarray: ...   # returns L2-normalized float32 (embedding_dim,)
+```
+
+`Bbox` is a simple dataclass/TypedDict `{x1, y1, x2, y2, class_id, confidence}` (borrow `purrai_core`'s existing type if present). Adapter wrappers translate `OSNetReid` and `Yolov10Detector` signatures into these protocols; the enroll/library code only sees the protocols.
+
 ## 9. Testing strategy
 
 **Unit:**
@@ -168,6 +189,7 @@ Each file aims to stay under ~150 lines. Detector / embedder dependencies are ta
 - `PetCard` / `RegisteredView` validation (required fields, enum values, schema_version format).
 - `Library.save/load/list/delete` round-trip with tmp dirs.
 - `Library.identify` max-cosine correctness: best-match hits, tie-breaking is deterministic, below-threshold returns `None`.
+- `RegisteredView.pose_hint` round-trips as `None` (guards against a later PR silently populating this reserved field without a schema bump).
 
 **Integration (fake backends via Protocol injection):**
 
