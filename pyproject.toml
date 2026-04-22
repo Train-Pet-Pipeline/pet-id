@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "pet-id"
 version = "0.1.0"
 description = "Pet identity system: multi-view registration + attribution (bootstrap)"
+license = {text = "BUSL-1.1"}
 requires-python = ">=3.11,<3.12"
 dependencies = [
     "numpy>=1.24",
