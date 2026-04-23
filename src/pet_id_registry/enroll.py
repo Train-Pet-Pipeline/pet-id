@@ -4,11 +4,10 @@ from __future__ import annotations
 from collections.abc import Iterable, Sequence
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import cv2
 import numpy as np
-
-from typing import Any
 
 from pet_id_registry.card import PetCard, PetSpecies, RegisteredView, compute_pet_id
 from pet_id_registry.library import Library
