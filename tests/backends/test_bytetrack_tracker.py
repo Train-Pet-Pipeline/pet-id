@@ -3,10 +3,18 @@
 from pathlib import Path
 
 import numpy as np
+import pytest
 
-from purrai_core.backends.bytetrack_tracker import ByteTrackTracker
-from purrai_core.config import load_config
-from purrai_core.types import BBox, Detection
+# Skip the whole module when the `[tracker]` extras (boxmot) is not installed.
+# CI's default `[dev,detector,reid]` matrix does not pull boxmot — which is
+# intentional per pet-id `.github/workflows/ci.yml` header (multi-GB ML deps
+# belong to a future heavy-runner job). `pytest.importorskip` emits a single
+# "skipped" line at collection instead of an ImportError that fails the run.
+pytest.importorskip("boxmot")
+
+from purrai_core.backends.bytetrack_tracker import ByteTrackTracker  # noqa: E402
+from purrai_core.config import load_config  # noqa: E402
+from purrai_core.types import BBox, Detection  # noqa: E402
 
 
 def _det(x1: float, y1: float, x2: float, y2: float, conf: float = 0.9) -> Detection:
