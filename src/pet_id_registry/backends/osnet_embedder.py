@@ -1,4 +1,5 @@
 """Adapter exposing purrai_core.OSNetReid as an Embedder protocol impl."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -24,11 +25,7 @@ class OSNetEmbedderAdapter:
             raise ValueError(f"crop must be HxWx3 BGR, got shape {crop.shape}")
         resized = cv2.resize(crop, (_INPUT_W, _INPUT_H))
         tensor = (
-            torch.from_numpy(resized)
-            .permute(2, 0, 1)
-            .float()
-            .unsqueeze(0)
-            .to(self._reid.device)
+            torch.from_numpy(resized).permute(2, 0, 1).float().unsqueeze(0).to(self._reid.device)
             / 255.0
         )
         with torch.no_grad():

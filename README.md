@@ -14,9 +14,18 @@ Bootstrap — seeded from `pet-demo/core` (commit hash will be recorded in initi
 
 ## Relation to sibling repos
 
-- Import contracts from `pet-schema`
-- Runs under `pet-infra` plugin runtime (Phase 1+)
-- Reuses detector / ReID / tracker backends from pet-demo/core
+**pet-id is intentionally independent** of the rest of the Train-Pet-Pipeline
+ecosystem (spec §5.2 "独立 CLI 工具"):
+
+- Does **not** import `pet-schema`, `pet-infra`, `pet-data`, or any other
+  `pet-*` package at runtime — zero cross-repo coupling, so pet-schema /
+  pet-infra breaking changes never block a pet-id release.
+- `PetCard` is a standalone Pydantic model in `pet_id_registry.card`, not
+  a pet-schema entity.
+- Registered in the ecosystem `compatibility_matrix.yaml` for version
+  alignment reporting only — not for peer-dep install ordering.
+- Algorithm core (`purrai_core`, seeded from `pet-demo/core`) ships with
+  pet-id; the CLI/registry layer (`pet_id_registry`) consumes it.
 
 ## Required reading
 

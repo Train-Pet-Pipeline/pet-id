@@ -16,6 +16,7 @@ def _fake_reid(dim: int = 512):
     reid.model = MagicMock()
     # model(tensor) -> torch tensor with shape (1, dim)
     import torch
+
     reid.model.return_value = torch.arange(dim, dtype=torch.float32).unsqueeze(0)
     return reid
 

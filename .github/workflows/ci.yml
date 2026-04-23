@@ -1,0 +1,46 @@
+name: CI
+
+# pet-id is an independent CLI tool (spec §5.2): no peer-dep install order,
+# no pet-* imports. CI covers lint + type check + pytest against the dev +
+# detector + reid extras subset — enough for the CLI / enrollment / identify
+# paths that tests actually exercise via mocked backends.
+#
+# Full-pose (mmpose) / narrative (transformers qwen2-vl) / tracker (boxmot)
+# extras are deliberately NOT installed in CI: they pull multi-GB ML deps
+# whose tests already patch() the backend. If a future contribution needs
+# real mmpose / transformers execution, add a separate `ci-heavy` job on a
+# large/self-hosted runner instead of bloating this one.
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install system deps
+        run: sudo apt-get update && sudo apt-get install -y libgl1 libglib2.0-0
+
+      - name: Install pet-id with dev + detector + reid extras
+        run: pip install -e ".[dev,detector,reid]"
+
+      - name: Lint
+        run: |
+          ruff check src/ tests/
+          ruff format --check src/ tests/
+
+      - name: Type check
+        run: mypy src/
+
+      - name: Test
+        run: pytest tests/ -v --tb=short -m "not gpu and not slow"
