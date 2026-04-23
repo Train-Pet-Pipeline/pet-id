@@ -15,20 +15,36 @@ from purrai_core.types import BBox, Detection
 def _setup(tmp_path: Path, monkeypatch) -> tuple[Path, Path, dict]:
     lib_root = tmp_path / "gal"
     params = tmp_path / "params.yaml"
-    params.write_text(yaml.safe_dump({
-        "detector": {"model_name": "yolov10n", "conf_threshold": 0.3,
-                     "iou_threshold": 0.5, "class_whitelist": [15, 16],
-                     "device": "cpu", "imgsz": 640},
-        "reid": {"model_name": "osnet_x0_25", "embedding_dim": 8,
-                 "similarity_threshold": 0.65, "device": "cpu"},
-        "pet_id": {"library_root": str(lib_root), "fps_sample": 2,
-                   "max_views": 8, "similarity_threshold": 0.55},
-    }))
+    params.write_text(
+        yaml.safe_dump(
+            {
+                "detector": {
+                    "model_name": "yolov10n",
+                    "conf_threshold": 0.3,
+                    "iou_threshold": 0.5,
+                    "class_whitelist": [15, 16],
+                    "device": "cpu",
+                    "imgsz": 640,
+                },
+                "reid": {
+                    "model_name": "osnet_x0_25",
+                    "embedding_dim": 8,
+                    "similarity_threshold": 0.65,
+                    "device": "cpu",
+                },
+                "pet_id": {
+                    "library_root": str(lib_root),
+                    "fps_sample": 2,
+                    "max_views": 8,
+                    "similarity_threshold": 0.55,
+                },
+            }
+        )
+    )
 
     class D:
         def detect(self, _):
-            return [Detection(bbox=BBox(0, 0, 100, 100), score=0.9,
-                              class_id=15, class_name="cat")]
+            return [Detection(bbox=BBox(0, 0, 100, 100), score=0.9, class_id=15, class_name="cat")]
 
     class E:
         embedding_dim = 8
@@ -57,11 +73,13 @@ def test_list_and_show_and_delete(tmp_path: Path, monkeypatch) -> None:
     img = _write_img(tmp_path / "p.jpg")
     runner = CliRunner()
     axis_ref["axis"] = 0
-    runner.invoke(main, ["--params", str(params), "register", str(img),
-                         "--name", "A", "--species", "cat"])
+    runner.invoke(
+        main, ["--params", str(params), "register", str(img), "--name", "A", "--species", "cat"]
+    )
     axis_ref["axis"] = 1
-    runner.invoke(main, ["--params", str(params), "register", str(img),
-                         "--name", "B", "--species", "dog"])
+    runner.invoke(
+        main, ["--params", str(params), "register", str(img), "--name", "B", "--species", "dog"]
+    )
 
     # list
     r_list = runner.invoke(main, ["--params", str(params), "list", "--json"])

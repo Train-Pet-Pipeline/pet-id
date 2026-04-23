@@ -12,8 +12,9 @@ from pet_id_registry.library import Library
 from purrai_core.types import BBox, Detection
 
 
-def _write_video(path: Path, *, frames: int, fps: int = 30,
-                 size: tuple[int, int] = (320, 240)) -> Path:
+def _write_video(
+    path: Path, *, frames: int, fps: int = 30, size: tuple[int, int] = (320, 240)
+) -> Path:
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     vw = cv2.VideoWriter(str(path), fourcc, fps, size)
     for i in range(frames):
@@ -32,8 +33,7 @@ class _Det:
         self._called += 1
         if self._called % self._det_every != 0:
             return []
-        return [Detection(bbox=BBox(10, 10, 200, 200), score=0.9,
-                          class_id=15, class_name="cat")]
+        return [Detection(bbox=BBox(10, 10, 200, 200), score=0.9, class_id=15, class_name="cat")]
 
 
 class _Emb:
@@ -48,9 +48,14 @@ def test_video_fps_sampling_and_cap(tmp_path: Path) -> None:
     video = _write_video(tmp_path / "v.mp4", frames=60, fps=30)
     lib = Library(tmp_path / "gal")
     card = enroll_video(
-        video_path=video, name="M", species=PetSpecies.cat,
-        detector=_Det(), embedder=_Emb(), library=lib,
-        fps_sample=2, max_views=3,
+        video_path=video,
+        name="M",
+        species=PetSpecies.cat,
+        detector=_Det(),
+        embedder=_Emb(),
+        library=lib,
+        fps_sample=2,
+        max_views=3,
         created_at=datetime(2026, 4, 21),
     )
     # 60 frames at src_fps=30 → 2 seconds → fps_sample=2 yields ~4 samples.
@@ -63,9 +68,14 @@ def test_video_filters_frames_without_detection(tmp_path: Path) -> None:
     lib = Library(tmp_path / "gal")
     # every 2nd sampled frame returns no detection
     card = enroll_video(
-        video_path=video, name="M", species=PetSpecies.cat,
-        detector=_Det(det_every=2), embedder=_Emb(), library=lib,
-        fps_sample=2, max_views=10,
+        video_path=video,
+        name="M",
+        species=PetSpecies.cat,
+        detector=_Det(det_every=2),
+        embedder=_Emb(),
+        library=lib,
+        fps_sample=2,
+        max_views=10,
         created_at=datetime(2026, 4, 21),
     )
     # some frames skipped, fewer than requested views

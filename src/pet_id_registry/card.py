@@ -1,4 +1,5 @@
 """PetCard Pydantic models + content-addressed pet_id hashing."""
+
 from __future__ import annotations
 
 import hashlib

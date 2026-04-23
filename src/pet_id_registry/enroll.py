@@ -1,14 +1,14 @@
 """Enrollment pipeline: detect → crop → embed → build PetCard → save."""
+
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import cv2
 import numpy as np
-
-from typing import Any
 
 from pet_id_registry.card import PetCard, PetSpecies, RegisteredView, compute_pet_id
 from pet_id_registry.library import Library
@@ -76,25 +76,29 @@ def enroll_photos(
             continue
         crops.append(crop)
     if not crops:
-        raise NoDetectionsError(
-            f"no pet detected across {len(image_paths)} input photo(s)"
-        )
+        raise NoDetectionsError(f"no pet detected across {len(image_paths)} input photo(s)")
     embeddings = [embedder.embed_crop(c) for c in crops]
     pet_id = compute_pet_id(embeddings[0])
 
     views = []
     for i in range(len(crops)):
         vid = f"{i + 1:04d}"
-        views.append(RegisteredView(
-            view_id=vid,
-            crop_uri=f"views/{vid}.jpg",
-            embedding_uri=f"views/{vid}.npy",
-        ))
+        views.append(
+            RegisteredView(
+                view_id=vid,
+                crop_uri=f"views/{vid}.jpg",
+                embedding_uri=f"views/{vid}.npy",
+            )
+        )
     cover_uri = f"{pet_id}/cover.jpg"
     card = PetCard(
-        pet_id=pet_id, name=name, species=species,
-        created_at=created_at, schema_version=_SCHEMA_VERSION,
-        cover_photo_uri=cover_uri, views=views,
+        pet_id=pet_id,
+        name=name,
+        species=species,
+        created_at=created_at,
+        schema_version=_SCHEMA_VERSION,
+        cover_photo_uri=cover_uri,
+        views=views,
         **(metadata or {}),
     )
     cover_crop = cv2.imread(str(cover_photo)) if cover_photo else None
@@ -154,15 +158,21 @@ def enroll_video(
     views = []
     for i in range(len(crops)):
         vid = f"{i + 1:04d}"
-        views.append(RegisteredView(
-            view_id=vid,
-            crop_uri=f"views/{vid}.jpg",
-            embedding_uri=f"views/{vid}.npy",
-        ))
+        views.append(
+            RegisteredView(
+                view_id=vid,
+                crop_uri=f"views/{vid}.jpg",
+                embedding_uri=f"views/{vid}.npy",
+            )
+        )
     card = PetCard(
-        pet_id=pet_id, name=name, species=species,
-        created_at=created_at, schema_version=_SCHEMA_VERSION,
-        cover_photo_uri=f"{pet_id}/cover.jpg", views=views,
+        pet_id=pet_id,
+        name=name,
+        species=species,
+        created_at=created_at,
+        schema_version=_SCHEMA_VERSION,
+        cover_photo_uri=f"{pet_id}/cover.jpg",
+        views=views,
         **(metadata or {}),
     )
     cover_crop = cv2.imread(str(cover_photo)) if cover_photo else None

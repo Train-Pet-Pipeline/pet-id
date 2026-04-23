@@ -1,4 +1,5 @@
 """Flat-file PetCard gallery: save / load / list / delete / identify."""
+
 from __future__ import annotations
 
 import json

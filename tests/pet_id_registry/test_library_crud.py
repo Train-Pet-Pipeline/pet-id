@@ -18,9 +18,13 @@ def _make_card(pet_id: str = "abcd1234", name: str = "Mimi") -> PetCard:
         created_at=datetime(2026, 4, 21, 10, 0, 0),
         schema_version="1.0.0",
         cover_photo_uri=f"{pet_id}/cover.jpg",
-        views=[RegisteredView(view_id="0001",
-                              crop_uri=f"{pet_id}/views/0001.jpg",
-                              embedding_uri=f"{pet_id}/views/0001.npy")],
+        views=[
+            RegisteredView(
+                view_id="0001",
+                crop_uri=f"{pet_id}/views/0001.jpg",
+                embedding_uri=f"{pet_id}/views/0001.npy",
+            )
+        ],
     )
 
 
@@ -58,8 +62,11 @@ def test_save_overwrites_with_force(tmp_path: Path) -> None:
     card = _make_card()
     crop, emb = _fake_view_payload()
     lib.save(card, view_assets=[(card.views[0], crop, emb)])
-    lib.save(card.model_copy(update={"name": "Mimi2"}),
-             view_assets=[(card.views[0], crop, emb)], force=True)
+    lib.save(
+        card.model_copy(update={"name": "Mimi2"}),
+        view_assets=[(card.views[0], crop, emb)],
+        force=True,
+    )
     reloaded = lib.load("abcd1234")
     assert reloaded.name == "Mimi2"
 

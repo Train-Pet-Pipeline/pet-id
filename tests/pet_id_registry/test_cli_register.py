@@ -22,8 +22,9 @@ def _stub_factories(monkeypatch):
 
     class D:
         def detect(self, f):
-            return [Detection(bbox=BBox(10, 10, 180, 180), score=0.9,
-                              class_id=15, class_name="cat")]
+            return [
+                Detection(bbox=BBox(10, 10, 180, 180), score=0.9, class_id=15, class_name="cat")
+            ]
 
     class E:
         embedding_dim = 8
@@ -37,13 +38,26 @@ def _stub_factories(monkeypatch):
 
 def _write_params(tmp_path: Path, library_root: str) -> Path:
     params = {
-        "detector": {"model_name": "yolov10n", "conf_threshold": 0.3,
-                     "iou_threshold": 0.5, "class_whitelist": [15, 16],
-                     "device": "cpu", "imgsz": 640},
-        "reid": {"model_name": "osnet_x0_25", "embedding_dim": 8,
-                 "similarity_threshold": 0.65, "device": "cpu"},
-        "pet_id": {"library_root": library_root, "fps_sample": 2,
-                   "max_views": 8, "similarity_threshold": 0.55},
+        "detector": {
+            "model_name": "yolov10n",
+            "conf_threshold": 0.3,
+            "iou_threshold": 0.5,
+            "class_whitelist": [15, 16],
+            "device": "cpu",
+            "imgsz": 640,
+        },
+        "reid": {
+            "model_name": "osnet_x0_25",
+            "embedding_dim": 8,
+            "similarity_threshold": 0.65,
+            "device": "cpu",
+        },
+        "pet_id": {
+            "library_root": library_root,
+            "fps_sample": 2,
+            "max_views": 8,
+            "similarity_threshold": 0.55,
+        },
     }
     path = tmp_path / "params.yaml"
     path.write_text(yaml.safe_dump(params))
@@ -56,12 +70,19 @@ def test_register_one_photo(tmp_path: Path, monkeypatch) -> None:
     lib_root = tmp_path / "gallery"
     params = _write_params(tmp_path, str(lib_root))
     runner = CliRunner()
-    result = runner.invoke(main, [
-        "--params", str(params),
-        "register", str(img),
-        "--name", "Mimi",
-        "--species", "cat",
-    ])
+    result = runner.invoke(
+        main,
+        [
+            "--params",
+            str(params),
+            "register",
+            str(img),
+            "--name",
+            "Mimi",
+            "--species",
+            "cat",
+        ],
+    )
     assert result.exit_code == 0, result.output
     assert "enrolled Mimi" in result.output
     assert any(lib_root.iterdir())
@@ -93,9 +114,18 @@ def test_register_exits_nonzero_when_no_detection(tmp_path: Path, monkeypatch) -
     lib_root = tmp_path / "gallery"
     params = _write_params(tmp_path, str(lib_root))
     runner = CliRunner()
-    result = runner.invoke(main, [
-        "--params", str(params), "register", str(img),
-        "--name", "M", "--species", "cat",
-    ])
+    result = runner.invoke(
+        main,
+        [
+            "--params",
+            str(params),
+            "register",
+            str(img),
+            "--name",
+            "M",
+            "--species",
+            "cat",
+        ],
+    )
     assert result.exit_code != 0
     assert "no pet detected" in result.output.lower()
