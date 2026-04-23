@@ -44,8 +44,7 @@ def _write_jpg(path: Path, color: int = 120) -> Path:
 
 
 def _det(x1, y1, x2, y2) -> Detection:
-    return Detection(bbox=BBox(x1, y1, x2, y2), score=0.9,
-                     class_id=15, class_name="cat")
+    return Detection(bbox=BBox(x1, y1, x2, y2), score=0.9, class_id=15, class_name="cat")
 
 
 def test_enroll_three_photos_gives_three_views(tmp_path: Path) -> None:
@@ -54,8 +53,12 @@ def test_enroll_three_photos_gives_three_views(tmp_path: Path) -> None:
     det = _FakeDetector([[_det(10, 10, 150, 180)]] * 3)
     emb = _FakeEmbedder()
     card = enroll_photos(
-        image_paths=files, name="Mimi", species=PetSpecies.cat,
-        detector=det, embedder=emb, library=lib,
+        image_paths=files,
+        name="Mimi",
+        species=PetSpecies.cat,
+        detector=det,
+        embedder=emb,
+        library=lib,
         created_at=datetime(2026, 4, 21),
     )
     assert len(card.views) == 3
@@ -69,8 +72,12 @@ def test_enroll_skips_frames_without_detection(tmp_path: Path) -> None:
     det = _FakeDetector([[_det(0, 0, 100, 100)], [], [_det(0, 0, 100, 100)]])
     emb = _FakeEmbedder()
     card = enroll_photos(
-        image_paths=files, name="M", species=PetSpecies.cat,
-        detector=det, embedder=emb, library=lib,
+        image_paths=files,
+        name="M",
+        species=PetSpecies.cat,
+        detector=det,
+        embedder=emb,
+        library=lib,
         created_at=datetime(2026, 4, 21),
     )
     assert len(card.views) == 2
@@ -83,7 +90,11 @@ def test_enroll_raises_when_all_frames_empty(tmp_path: Path) -> None:
     det = _FakeDetector([[], []])
     with pytest.raises(NoDetectionsError):
         enroll_photos(
-            image_paths=files, name="M", species=PetSpecies.cat,
-            detector=det, embedder=_FakeEmbedder(), library=lib,
+            image_paths=files,
+            name="M",
+            species=PetSpecies.cat,
+            detector=det,
+            embedder=_FakeEmbedder(),
+            library=lib,
             created_at=datetime(2026, 4, 21),
         )

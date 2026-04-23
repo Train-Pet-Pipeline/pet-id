@@ -1,4 +1,5 @@
 """petid CLI — register / identify / list / show / delete."""
+
 from __future__ import annotations
 
 import datetime as _dt
@@ -56,8 +57,13 @@ def _collect_images(directory: Path) -> list[Path]:
 
 
 @click.group()
-@click.option("--params", "params_path", type=click.Path(exists=True, path_type=Path),
-              default=Path("params.yaml"), show_default=True)
+@click.option(
+    "--params",
+    "params_path",
+    type=click.Path(exists=True, path_type=Path),
+    default=Path("params.yaml"),
+    show_default=True,
+)
 @click.pass_context
 def main(ctx: click.Context, params_path: Path) -> None:
     """petid: pet identity enrollment + identification CLI."""
@@ -131,29 +137,47 @@ def register_cmd(
     try:
         if kind == "image":
             card = enroll_photos(
-                image_paths=[input_path], name=name, species=PetSpecies(species),
-                detector=detector, embedder=embedder, library=library,
-                created_at=_dt.datetime.now(_dt.UTC), cover_photo=cover_photo,
-                force=force, metadata=metadata,
+                image_paths=[input_path],
+                name=name,
+                species=PetSpecies(species),
+                detector=detector,
+                embedder=embedder,
+                library=library,
+                created_at=_dt.datetime.now(_dt.UTC),
+                cover_photo=cover_photo,
+                force=force,
+                metadata=metadata,
             )
         elif kind == "dir":
             images = _collect_images(input_path)
             if not images:
                 raise click.UsageError(f"no images found in directory: {input_path}")
             card = enroll_photos(
-                image_paths=images, name=name, species=PetSpecies(species),
-                detector=detector, embedder=embedder, library=library,
-                created_at=_dt.datetime.now(_dt.UTC), cover_photo=cover_photo,
-                force=force, metadata=metadata,
+                image_paths=images,
+                name=name,
+                species=PetSpecies(species),
+                detector=detector,
+                embedder=embedder,
+                library=library,
+                created_at=_dt.datetime.now(_dt.UTC),
+                cover_photo=cover_photo,
+                force=force,
+                metadata=metadata,
             )
         elif kind == "video":
             card = enroll_video(
-                video_path=input_path, name=name, species=PetSpecies(species),
-                detector=detector, embedder=embedder, library=library,
+                video_path=input_path,
+                name=name,
+                species=PetSpecies(species),
+                detector=detector,
+                embedder=embedder,
+                library=library,
                 fps_sample=float(pet_id_cfg["fps_sample"]),
                 max_views=int(pet_id_cfg["max_views"]),
-                created_at=_dt.datetime.now(_dt.UTC), cover_photo=cover_photo,
-                force=force, metadata=metadata,
+                created_at=_dt.datetime.now(_dt.UTC),
+                cover_photo=cover_photo,
+                force=force,
+                metadata=metadata,
             )
         else:  # pragma: no cover
             raise click.UsageError(f"unsupported input: {input_path}")
@@ -196,6 +220,7 @@ def identify_cmd(
     embedder = build_embedder(params["reid"])
 
     import cv2
+
     records: list[dict[str, Any]] = []
     for img_path in image_paths:
         frame = cv2.imread(str(img_path))
@@ -204,8 +229,15 @@ def identify_cmd(
             continue
         dets = detector.detect(frame)
         if not dets:
-            records.append({"file": str(img_path), "bbox": None, "name": "no detection",
-                            "pet_id": None, "score": 0.0})
+            records.append(
+                {
+                    "file": str(img_path),
+                    "bbox": None,
+                    "name": "no detection",
+                    "pet_id": None,
+                    "score": 0.0,
+                }
+            )
             continue
         for d in dets:
             x1, y1 = max(0, int(d.bbox.x1)), max(0, int(d.bbox.y1))
@@ -214,13 +246,15 @@ def identify_cmd(
                 continue
             q = embedder.embed_crop(frame[y1:y2, x1:x2].copy())
             res = library.identify(q, threshold=threshold)
-            records.append({
-                "file": str(img_path),
-                "bbox": [x1, y1, x2, y2],
-                "pet_id": res.pet_id if res else None,
-                "name": res.name if res else "unknown",
-                "score": float(res.score) if res else 0.0,
-            })
+            records.append(
+                {
+                    "file": str(img_path),
+                    "bbox": [x1, y1, x2, y2],
+                    "pet_id": res.pet_id if res else None,
+                    "name": res.name if res else "unknown",
+                    "score": float(res.score) if res else 0.0,
+                }
+            )
 
     if as_json:
         click.echo(json.dumps(records, indent=2))
@@ -244,16 +278,22 @@ def list_cmd(ctx: click.Context, library_root: Path | None, as_json: bool) -> No
     library = Library(root)
     entries = library.list()
     payload = [
-        {"pet_id": e.pet_id, "name": e.name, "species": e.species,
-         "view_count": e.view_count, "created_at": e.created_at}
+        {
+            "pet_id": e.pet_id,
+            "name": e.name,
+            "species": e.species,
+            "view_count": e.view_count,
+            "created_at": e.created_at,
+        }
         for e in entries
     ]
     if as_json:
         click.echo(json.dumps(payload, indent=2))
     else:
         for e in entries:
-            click.echo(f"{e.pet_id}  {e.name:<16}  {e.species:<6}  "
-                       f"views={e.view_count}  {e.created_at}")
+            click.echo(
+                f"{e.pet_id}  {e.name:<16}  {e.species:<6}  views={e.view_count}  {e.created_at}"
+            )
 
 
 @main.command("show")

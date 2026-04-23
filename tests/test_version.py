@@ -1,4 +1,5 @@
 """Parity tests: both top-level packages' __version__ must match installed metadata."""
+
 from __future__ import annotations
 
 import importlib.metadata
