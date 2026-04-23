@@ -5,9 +5,18 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import pytest
 import torch
 
-from purrai_core.types import NarrativeOutput
+# Skip the whole module when the `[narrative]` extras (transformers +
+# accelerate + qwen-vl-utils) is not installed. CI's default
+# `[dev,detector,reid]` matrix does not pull transformers — intentional
+# per pet-id `.github/workflows/ci.yml` header. Same pattern as
+# test_bytetrack_tracker (boxmot) / test_mmpose_pose (mmpose) /
+# test_osnet_reid (torchreid).
+pytest.importorskip("transformers")
+
+from purrai_core.types import NarrativeOutput  # noqa: E402
 
 CFG = {
     "model_id": "Qwen/Qwen2-VL-2B-Instruct",
