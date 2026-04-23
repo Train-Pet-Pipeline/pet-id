@@ -4,7 +4,7 @@ setup:
 	python -m pip install -e ".[dev,all]"
 
 test:
-	pytest tests/ -v --cov=purrai_core --cov-report=term-missing
+	pytest tests/ -v --cov=purrai_core --cov=pet_id_registry --cov-report=term-missing
 
 test-nogpu:
 	pytest tests/ -v -m "not gpu"
@@ -12,7 +12,7 @@ test-nogpu:
 lint:
 	ruff check src/ tests/
 	ruff format --check src/ tests/
-	mypy src/purrai_core
+	mypy src/
 
 clean:
 	rm -rf .pytest_cache .mypy_cache .ruff_cache
