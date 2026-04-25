@@ -3,6 +3,13 @@
 from pathlib import Path
 
 import numpy as np
+import pytest
+
+# F015 fix: skip when optional 'tracker' extra not installed (boxmot).
+# pet-id pyproject [project.optional-dependencies] declares
+# tracker = ["lap>=0.4", "scipy>=1.11", "boxmot>=10.0"] but base `make test`
+# doesn't install it. Skip via importorskip so test collection succeeds.
+pytest.importorskip("boxmot")
 
 from purrai_core.backends.bytetrack_tracker import ByteTrackTracker
 from purrai_core.config import load_config

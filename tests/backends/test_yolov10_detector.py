@@ -6,6 +6,11 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
+# F015 fix: skip when optional 'detector' extra not installed (ultralytics).
+# pet-id pyproject [project.optional-dependencies] declares detector = ["ultralytics>=8.3"]
+# but base `make test` doesn't install it, causing ImportError at collection time.
+pytest.importorskip("ultralytics")
+
 from purrai_core.backends.yolov10_detector import YOLOv10Detector
 from purrai_core.config import load_config
 
