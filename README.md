@@ -31,7 +31,7 @@ ecosystem (spec §5.2 "独立 CLI 工具"):
 
 Parent monorepo guide: `../pet-infra/docs/DEVELOPMENT_GUIDE.md`
 
-## pet-id registry (v0.1.0)
+## pet-id registry (v0.2.2)
 
 ### Install
 
